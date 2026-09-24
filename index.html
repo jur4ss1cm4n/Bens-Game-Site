@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ben's Game Site</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #202124;
+      color: white;
+      text-align: center;
+    }
+
+    header {
+      background: #4285f4;
+      padding: 25px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 40px;
+    }
+
+    .games {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding: 40px;
+    }
+
+    .game {
+      background: white;
+      color: #222;
+      width: 220px;
+      padding: 25px;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .game:hover {
+      transform: scale(1.05);
+    }
+
+    .game button {
+      background: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>🎮 Ben's Game Site</h1>
+    <p>Welcome! Choose a game below.</p>
+  </header>
+
+  <div class="games">
+
+    <div class="game">
+      <h2>🐍 Snake</h2>
+      <p>Coming soon!</p>
+      <button onclick="alert('Snake is coming soon!')">
+        Play
+      </button>
+    </div>
+
+    <div class="game">
+      <h2>🎯 Clicker</h2>
+      <p>Click the button!</p>
+      <button onclick="alert('You clicked it!')">
+        Play
+      </button>
+    </div>
+
+    <div class="game">
+      <h2>🚀 Space Game</h2>
+      <p>Coming soon!</p>
+      <button onclick="alert('Space Game is coming soon!')">
+        Play
+      </button>
+    </div>
+
+  </div>
+
+</body>
+</html>
