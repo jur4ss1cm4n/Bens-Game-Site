@@ -1,140 +1,398 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Ben's 3D Web Hero</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #111;
-      font-family: Arial, sans-serif;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ben's Web Hero</title>
 
-    #info {
-      position: fixed;
-      top: 15px;
-      left: 15px;
-      z-index: 10;
-      color: white;
-      background: rgba(0,0,0,.65);
-      padding: 12px 16px;
-      border-radius: 10px;
-    }
+<style>
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#050914;
+  font-family:Arial,sans-serif;
+}
 
-    #info b {
-      color: #ff3333;
-    }
-  </style>
+canvas{
+  display:block;
+}
+
+#hud{
+  position:fixed;
+  top:15px;
+  left:15px;
+  z-index:10;
+  color:white;
+  background:rgba(0,0,0,.65);
+  padding:14px 18px;
+  border-radius:12px;
+  line-height:1.5;
+  user-select:none;
+}
+
+#hud b{
+  color:#ff3b3b;
+}
+
+#crosshair{
+  position:fixed;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  color:white;
+  font-size:24px;
+  pointer-events:none;
+}
+
+#status{
+  color:#70d6ff;
+}
+
+#help{
+  position:fixed;
+  bottom:15px;
+  left:50%;
+  transform:translateX(-50%);
+  color:white;
+  background:rgba(0,0,0,.55);
+  padding:8px 15px;
+  border-radius:10px;
+  font-size:14px;
+}
+</style>
 </head>
 
 <body>
 
-<div id="info">
-  🕷️ <b>Ben's Web Hero</b><br>
-  WASD = Move &nbsp; | &nbsp; Space = Jump
+<div id="hud">
+  🕷️ <b>BEN'S WEB HERO</b><br>
+  WASD — Move<br>
+  SPACE — Jump<br>
+  Mouse — Look<br>
+  Click — Shoot / release web<br>
+  <span id="status">Web: Ready</span>
+</div>
+
+<div id="crosshair">+</div>
+
+<div id="help">
+  Click the game to control the camera
 </div>
 
 <script type="module">
+
 import * as THREE from
 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87ceeb);
 
-// Camera
+// ============================================================
+// SCENE
+// ============================================================
+
+const scene = new THREE.Scene();
+
+scene.background = new THREE.Color(0x79b9e8);
+
+scene.fog = new THREE.Fog(
+  0x79b9e8,
+  80,
+  260
+);
+
+
+// ============================================================
+// CAMERA
+// ============================================================
+
 const camera = new THREE.PerspectiveCamera(
   70,
-  window.innerWidth / window.innerHeight,
+  innerWidth / innerHeight,
   0.1,
-  1000
+  600
 );
 
-camera.position.set(0, 7, 10);
+camera.position.set(0,7,12);
 
-// Renderer
-const renderer = new THREE.WebGLRenderer({
-  antialias: true
-});
 
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-document.body.appendChild(renderer.domElement);
+// ============================================================
+// RENDERER
+// ============================================================
 
-// Lights
-const sunlight = new THREE.DirectionalLight(0xffffff, 2);
-sunlight.position.set(20, 40, 20);
-sunlight.castShadow = true;
-scene.add(sunlight);
+const renderer =
+  new THREE.WebGLRenderer({
+    antialias:true
+  });
 
-scene.add(new THREE.HemisphereLight(
-  0xffffff,
-  0x444444,
-  1.5
-));
-
-// Ground
-const ground = new THREE.Mesh(
-  new THREE.BoxGeometry(120, 1, 120),
-  new THREE.MeshStandardMaterial({ color: 0x333333 })
+renderer.setSize(
+  innerWidth,
+  innerHeight
 );
 
-ground.position.y = -0.5;
-ground.receiveShadow = true;
-scene.add(ground);
+renderer.setPixelRatio(
+  Math.min(devicePixelRatio,2)
+);
 
-// Roads
-for (let x = -50; x <= 50; x += 20) {
-  const road = new THREE.Mesh(
-    new THREE.BoxGeometry(8, 0.05, 120),
-    new THREE.MeshStandardMaterial({ color: 0x111111 })
+renderer.shadowMap.enabled=true;
+
+renderer.shadowMap.type=
+  THREE.PCFSoftShadowMap;
+
+document.body.appendChild(
+  renderer.domElement
+);
+
+
+// ============================================================
+// LIGHTING
+// ============================================================
+
+const sun =
+  new THREE.DirectionalLight(
+    0xffffff,
+    3
   );
 
-  road.position.set(x, 0.03, 0);
+sun.position.set(
+  80,
+  120,
+  40
+);
+
+sun.castShadow=true;
+
+sun.shadow.mapSize.width=2048;
+sun.shadow.mapSize.height=2048;
+
+sun.shadow.camera.left=-150;
+sun.shadow.camera.right=150;
+sun.shadow.camera.top=150;
+sun.shadow.camera.bottom=-150;
+
+scene.add(sun);
+
+
+scene.add(
+  new THREE.HemisphereLight(
+    0xaad8ff,
+    0x222233,
+    1.5
+  )
+);
+
+
+// ============================================================
+// MATERIALS
+// ============================================================
+
+const groundMaterial =
+  new THREE.MeshStandardMaterial({
+    color:0x34383d,
+    roughness:.9
+  });
+
+const roadMaterial =
+  new THREE.MeshStandardMaterial({
+    color:0x17191d,
+    roughness:1
+  });
+
+const buildingMaterials=[
+  new THREE.MeshStandardMaterial({
+    color:0x626b78,
+    roughness:.8
+  }),
+
+  new THREE.MeshStandardMaterial({
+    color:0x7a7470,
+    roughness:.8
+  }),
+
+  new THREE.MeshStandardMaterial({
+    color:0x4e5968,
+    roughness:.8
+  }),
+
+  new THREE.MeshStandardMaterial({
+    color:0x8b8580,
+    roughness:.8
+  })
+];
+
+
+// ============================================================
+// GROUND
+// ============================================================
+
+const ground =
+  new THREE.Mesh(
+    new THREE.BoxGeometry(
+      500,
+      1,
+      500
+    ),
+    groundMaterial
+  );
+
+ground.position.y=-.5;
+ground.receiveShadow=true;
+
+scene.add(ground);
+
+
+// ============================================================
+// ROADS
+// ============================================================
+
+for(let x=-100;x<=100;x+=40){
+
+  const road =
+    new THREE.Mesh(
+      new THREE.BoxGeometry(
+        12,
+        .05,
+        500
+      ),
+      roadMaterial
+    );
+
+  road.position.set(
+    x,
+    .03,
+    0
+  );
+
   scene.add(road);
 }
 
-// Buildings
-function createBuilding(x, z, width, height, depth) {
 
-  const building = new THREE.Mesh(
-    new THREE.BoxGeometry(width, height, depth),
-    new THREE.MeshStandardMaterial({
-      color: Math.random() > 0.5
-        ? 0x777777
-        : 0x555f70
-    })
-  );
+for(let z=-100;z<=100;z+=40){
 
-  building.position.set(
-    x,
-    height / 2,
+  const road =
+    new THREE.Mesh(
+      new THREE.BoxGeometry(
+        500,
+        .05,
+        12
+      ),
+      roadMaterial
+    );
+
+  road.position.set(
+    0,
+    .04,
     z
   );
 
-  building.castShadow = true;
-  building.receiveShadow = true;
+  scene.add(road);
+}
+
+
+// ============================================================
+// BUILDINGS
+// ============================================================
+
+const buildings=[];
+
+function makeBuilding(
+  x,
+  z,
+  width,
+  height,
+  depth
+){
+
+  const material =
+    buildingMaterials[
+      Math.floor(
+        Math.random()*
+        buildingMaterials.length
+      )
+    ];
+
+  const building =
+    new THREE.Mesh(
+      new THREE.BoxGeometry(
+        width,
+        height,
+        depth
+      ),
+      material
+    );
+
+  building.position.set(
+    x,
+    height/2,
+    z
+  );
+
+  building.castShadow=true;
+  building.receiveShadow=true;
 
   scene.add(building);
 
+  buildings.push(building);
+
+
   // Windows
+
   const windowMaterial =
-    new THREE.MeshBasicMaterial({
-      color: 0xffff88
+    new THREE.MeshStandardMaterial({
+      color:0xffe28a,
+      emissive:0x665000,
+      roughness:.3
     });
 
-  for (let y = 4; y < height - 1; y += 4) {
 
-    for (let wx = -width / 2 + 1; wx < width / 2; wx += 2) {
+  const rows =
+    Math.floor(height/3.5);
 
-      const window = new THREE.Mesh(
-        new THREE.BoxGeometry(0.8, 1.2, 0.05),
-        windowMaterial
-      );
+  const cols =
+    Math.max(
+      1,
+      Math.floor(width/2.5)
+    );
+
+
+  for(
+    let row=0;
+    row<rows;
+    row++
+  ){
+
+    for(
+      let col=0;
+      col<cols;
+      col++
+    ){
+
+      if(Math.random()<.12)
+        continue;
+
+      const window =
+        new THREE.Mesh(
+          new THREE.BoxGeometry(
+            1,
+            1.4,
+            .08
+          ),
+          windowMaterial
+        );
+
+      const wx =
+        x-width/2+
+        1.5+
+        col*2.5;
+
+      const wy =
+        2+
+        row*3.5;
 
       window.position.set(
-        x + wx,
-        y,
-        z - depth / 2 - 0.03
+        wx,
+        wy,
+        z-depth/2-.05
       );
 
       scene.add(window);
@@ -142,203 +400,1110 @@ function createBuilding(x, z, width, height, depth) {
   }
 }
 
-// City
-createBuilding(-18, -18, 12, 25, 12);
-createBuilding(18, -20, 15, 35, 14);
-createBuilding(-20, 18, 14, 42, 14);
-createBuilding(20, 20, 12, 28, 12);
 
-createBuilding(-40, 0, 14, 30, 14);
-createBuilding(40, 0, 14, 38, 14);
+// City layout
 
-createBuilding(0, -40, 18, 50, 18);
-createBuilding(0, 40, 18, 45, 18);
+const cityPositions=[
+  [-55,-55,22,55,22],
+  [-15,-55,18,38,18],
+  [25,-55,25,70,22],
 
+  [-55,-15,25,80,22],
+  [55,-15,20,55,20],
+
+  [-55,25,22,45,22],
+  [55,25,25,75,25],
+
+  [-55,65,20,65,20],
+  [-15,65,25,90,22],
+  [25,65,18,50,18],
+
+  [-100,-30,25,65,25],
+  [100,30,25,80,25],
+
+  [-100,50,22,50,22],
+  [100,-50,22,65,22]
+];
+
+for(const b of cityPositions){
+  makeBuilding(...b);
+}
+
+
+// ============================================================
+// STREET LIGHTS
+// ============================================================
+
+function streetLight(x,z){
+
+  const pole =
+    new THREE.Mesh(
+      new THREE.CylinderGeometry(
+        .12,.12,5
+      ),
+      new THREE.MeshStandardMaterial({
+        color:0x20242a
+      })
+    );
+
+  pole.position.set(
+    x,
+    2.5,
+    z
+  );
+
+  pole.castShadow=true;
+
+  scene.add(pole);
+
+
+  const lamp =
+    new THREE.Mesh(
+      new THREE.SphereGeometry(
+        .3,
+        12,
+        12
+      ),
+      new THREE.MeshStandardMaterial({
+        color:0xffffbb,
+        emissive:0x555500
+      })
+    );
+
+  lamp.position.set(
+    x,
+    5.1,
+    z
+  );
+
+  scene.add(lamp);
+}
+
+
+for(let x=-100;x<=100;x+=40){
+
+  for(let z=-100;z<=100;z+=40){
+
+    streetLight(
+      x+8,
+      z+8
+    );
+
+  }
+}
+
+
+// ============================================================
 // HERO
-const hero = new THREE.Group();
+// ============================================================
 
-// Body
-const body = new THREE.Mesh(
-  new THREE.BoxGeometry(1.2, 2, 0.65),
+const hero =
+  new THREE.Group();
+
+scene.add(hero);
+
+
+// Materials
+
+const red =
   new THREE.MeshStandardMaterial({
-    color: 0xcc1111
-  })
-);
+    color:0xc91b24,
+    roughness:.65
+  });
 
-body.position.y = 2;
-body.castShadow = true;
-hero.add(body);
+const blue =
+  new THREE.MeshStandardMaterial({
+    color:0x101d79,
+    roughness:.7
+  });
+
+const black =
+  new THREE.MeshStandardMaterial({
+    color:0x050505,
+    roughness:.5
+  });
+
+
+// Torso
+
+const torso =
+  new THREE.Mesh(
+    new THREE.BoxGeometry(
+      1.15,
+      1.65,
+      .65
+    ),
+    red
+  );
+
+torso.position.y=2.55;
+
+torso.castShadow=true;
+
+hero.add(torso);
+
 
 // Head
-const head = new THREE.Mesh(
-  new THREE.SphereGeometry(0.55, 24, 24),
-  new THREE.MeshStandardMaterial({
-    color: 0xcc1111
-  })
-);
 
-head.position.y = 3.4;
-head.castShadow = true;
+const head =
+  new THREE.Mesh(
+    new THREE.SphereGeometry(
+      .52,
+      24,
+      24
+    ),
+    red
+  );
+
+head.position.y=3.75;
+
+head.castShadow=true;
+
 hero.add(head);
 
-// Blue legs
-const blue = new THREE.MeshStandardMaterial({
-  color: 0x1122aa
-});
 
-for (const x of [-0.35, 0.35]) {
+// Eyes
 
-  const leg = new THREE.Mesh(
-    new THREE.BoxGeometry(0.4, 1.5, 0.5),
+const eyeMaterial =
+  new THREE.MeshStandardMaterial({
+    color:0xffffff,
+    roughness:.25
+  });
+
+for(const x of [-.19,.19]){
+
+  const eye =
+    new THREE.Mesh(
+      new THREE.SphereGeometry(
+        .13,
+        12,
+        12
+      ),
+      eyeMaterial
+    );
+
+  eye.scale.set(
+    .7,
+    1.35,
+    .25
+  );
+
+  eye.position.set(
+    x,
+    3.82,
+    -.47
+  );
+
+  hero.add(eye);
+}
+
+
+// Hips
+
+const hips =
+  new THREE.Mesh(
+    new THREE.BoxGeometry(
+      .9,
+      .45,
+      .6
+    ),
     blue
   );
 
-  leg.position.set(x, 0.75, 0);
-  leg.castShadow = true;
-  hero.add(leg);
+hips.position.y=1.65;
+
+hips.castShadow=true;
+
+hero.add(hips);
+
+
+// ============================================================
+// LIMBS
+// ============================================================
+
+function createLimb(
+  material,
+  width,
+  height,
+  depth
+){
+
+  const pivot =
+    new THREE.Group();
+
+  const mesh =
+    new THREE.Mesh(
+      new THREE.BoxGeometry(
+        width,
+        height,
+        depth
+      ),
+      material
+    );
+
+  mesh.position.y=
+    -height/2;
+
+  mesh.castShadow=true;
+
+  pivot.add(mesh);
+
+  hero.add(pivot);
+
+  return pivot;
 }
 
-// Blue arms
-for (const x of [-0.9, 0.9]) {
 
-  const arm = new THREE.Mesh(
-    new THREE.BoxGeometry(0.35, 1.5, 0.4),
-    blue
+// Legs
+
+const leftLeg =
+  createLimb(
+    blue,
+    .38,
+    1.55,
+    .45
   );
 
-  arm.position.set(x, 2, 0);
-  arm.rotation.z = x < 0 ? -0.15 : 0.15;
-  arm.castShadow = true;
-  hero.add(arm);
+const rightLeg =
+  createLimb(
+    blue,
+    .38,
+    1.55,
+    .45
+  );
+
+leftLeg.position.set(
+  -.3,
+  1.55,
+  0
+);
+
+rightLeg.position.set(
+  .3,
+  1.55,
+  0
+);
+
+
+// Arms
+
+const leftArm =
+  createLimb(
+    red,
+    .34,
+    1.45,
+    .4
+  );
+
+const rightArm =
+  createLimb(
+    red,
+    .34,
+    1.45,
+    .4
+  );
+
+leftArm.position.set(
+  -.72,
+  3.15,
+  0
+);
+
+rightArm.position.set(
+  .72,
+  3.15,
+  0
+);
+
+
+// Hands
+
+const handGeometry =
+  new THREE.SphereGeometry(
+    .23,
+    12,
+    12
+  );
+
+const leftHand =
+  new THREE.Mesh(
+    handGeometry,
+    red
+  );
+
+const rightHand =
+  new THREE.Mesh(
+    handGeometry,
+    red
+  );
+
+leftHand.position.y=-1.5;
+rightHand.position.y=-1.5;
+
+leftArm.add(leftHand);
+rightArm.add(rightHand);
+
+
+// ============================================================
+// CONTROLS
+// ============================================================
+
+const keys={};
+
+addEventListener(
+  'keydown',
+  e=>{
+    keys[e.code]=true;
+
+    if(
+      e.code==='Space'
+      &&
+      grounded
+    ){
+      velocity.y=9;
+      grounded=false;
+    }
+  }
+);
+
+addEventListener(
+  'keyup',
+  e=>{
+    keys[e.code]=false;
+  }
+);
+
+
+// ============================================================
+// MOUSE CAMERA
+// ============================================================
+
+let yaw=0;
+let pitch=.18;
+
+let mouseLocked=false;
+
+renderer.domElement.addEventListener(
+  'click',
+  ()=>{
+    renderer.domElement.requestPointerLock();
+  }
+);
+
+document.addEventListener(
+  'pointerlockchange',
+  ()=>{
+    mouseLocked=
+      document.pointerLockElement===
+      renderer.domElement;
+  }
+);
+
+document.addEventListener(
+  'mousemove',
+  e=>{
+
+    if(!mouseLocked)
+      return;
+
+    yaw-=e.movementX*.0025;
+
+    pitch-=e.movementY*.0025;
+
+    pitch=
+      Math.max(
+        -.55,
+        Math.min(.65,pitch)
+      );
+  }
+);
+
+
+// ============================================================
+// PHYSICS
+// ============================================================
+
+const velocity =
+  new THREE.Vector3();
+
+const velocityTarget =
+  new THREE.Vector3();
+
+let grounded=true;
+
+let lastTime=
+  performance.now();
+
+
+// ============================================================
+// WEB
+// ============================================================
+
+let webAttached=false;
+let webPoint=null;
+let webLine=null;
+let ropeLength=0;
+
+const webMaterial =
+  new THREE.LineBasicMaterial({
+    color:0xffffff
+  });
+
+
+function getWebOrigin(){
+
+  return hero.localToWorld(
+    new THREE.Vector3(
+      .72,
+      1.55,
+      -.15
+    )
+  );
 }
 
-hero.position.set(0, 0, 0);
-scene.add(hero);
-// 🕸️ WEB SYSTEM
 
-let webLine = null;
-let webTarget = null;
+function shootWeb(){
 
-const webMaterial = new THREE.LineBasicMaterial({
-  color: 0xffffff,
-  linewidth: 3
-});
+  if(webAttached){
 
-function shootWeb() {
+    releaseWeb();
 
-  // If already attached, release the web
-  if (webLine) {
-    scene.remove(webLine);
-    webLine = null;
-    webTarget = null;
     return;
   }
 
-  // Shoot toward the direction the hero is facing
-  const direction = new THREE.Vector3(0, 0, -1);
 
-  direction.applyQuaternion(hero.quaternion);
-  direction.normalize();
+  const raycaster =
+    new THREE.Raycaster();
 
-  // Web reaches 35 units
-  webTarget = hero.position.clone()
-    .add(direction.multiplyScalar(35));
+  const direction =
+    new THREE.Vector3(
+      0,
+      0,
+      -1
+    );
 
-  // Create the web
-  const points = [
-    hero.position.clone().add(new THREE.Vector3(0, 2, 0)),
-    webTarget.clone()
-  ];
-
-  const geometry = new THREE.BufferGeometry()
-    .setFromPoints(points);
-
-  webLine = new THREE.Line(
-    geometry,
-    webMaterial
+  direction.applyQuaternion(
+    camera.quaternion
   );
+
+
+  raycaster.set(
+    camera.position,
+    direction
+  );
+
+
+  const hits =
+    raycaster.intersectObjects(
+      buildings,
+      false
+    );
+
+
+  if(hits.length===0){
+
+    document.getElementById(
+      'status'
+    ).textContent=
+      'Web: No building hit';
+
+    return;
+  }
+
+
+  const hit=hits[0];
+
+  webPoint=
+    hit.point.clone();
+
+
+  const origin=
+    getWebOrigin();
+
+
+  ropeLength=
+    origin.distanceTo(
+      webPoint
+    );
+
+
+  webAttached=true;
+
+
+  const geometry=
+    new THREE.BufferGeometry()
+      .setFromPoints([
+        origin,
+        webPoint
+      ]);
+
+
+  webLine=
+    new THREE.Line(
+      geometry,
+      webMaterial
+    );
+
 
   scene.add(webLine);
+
+
+  document.getElementById(
+    'status'
+  ).textContent=
+    'Web: ATTACHED';
 }
 
-window.addEventListener('mousedown', () => {
-  shootWeb();
-});
 
-// Controls
-const keys = {};
+function releaseWeb(){
 
-window.addEventListener('keydown', e => {
-  keys[e.code] = true;
-});
+  webAttached=false;
 
-window.addEventListener('keyup', e => {
-  keys[e.code] = false;
-});
+  if(webLine){
 
-// Physics
-let velocityY = 0;
-let onGround = true;
+    scene.remove(
+      webLine
+    );
 
-function animate() {
-
-  requestAnimationFrame(animate);
-
-  const speed = 0.18;
-
-  if (keys['KeyW']) hero.position.z -= speed;
-  if (keys['KeyS']) hero.position.z += speed;
-  if (keys['KeyA']) hero.position.x -= speed;
-  if (keys['KeyD']) hero.position.x += speed;
-
-  // Jump
-  if (keys['Space'] && onGround) {
-    velocityY = 0.32;
-    onGround = false;
+    webLine=null;
   }
 
-  velocityY -= 0.012;
-  hero.position.y += velocityY;
+  document.getElementById(
+    'status'
+  ).textContent=
+    'Web: Ready';
+}
 
-  if (hero.position.y <= 0) {
-    hero.position.y = 0;
-    velocityY = 0;
-    onGround = true;
+
+addEventListener(
+  'mousedown',
+  e=>{
+
+    if(e.button===0){
+      shootWeb();
+    }
+
+  }
+);
+
+
+// ============================================================
+// SWING PHYSICS
+// ============================================================
+
+function updateWebPhysics(dt){
+
+  if(!webAttached)
+    return;
+
+
+  const origin=
+    getWebOrigin();
+
+
+  const difference=
+    new THREE.Vector3()
+      .subVectors(
+        origin,
+        webPoint
+      );
+
+
+  const distance=
+    difference.length();
+
+
+  // Rope constraint
+
+  if(distance>ropeLength){
+
+    const normal=
+      difference.clone()
+        .normalize();
+
+
+    // Move hero back onto rope sphere
+
+    const correction=
+      distance-ropeLength;
+
+
+    hero.position.add(
+      normal.clone()
+        .multiplyScalar(
+          -correction
+        )
+    );
+
+
+    // Remove outward velocity
+
+    const radialVelocity=
+      velocity.dot(normal);
+
+
+    if(radialVelocity>0){
+
+      velocity.sub(
+        normal.clone()
+          .multiplyScalar(
+            radialVelocity
+          )
+      );
+
+    }
   }
 
-  // Camera follows hero
-  const targetCamera = new THREE.Vector3(
-    hero.position.x,
-    hero.position.y + 6,
-    hero.position.z + 9
+
+  // Air resistance
+
+  velocity.multiplyScalar(
+    Math.pow(.998,dt*60)
   );
 
-  camera.position.lerp(targetCamera, 0.08);
+
+  // Update rope visual
+
+  if(webLine){
+
+    const positions=
+      webLine.geometry
+        .attributes
+        .position
+        .array;
+
+
+    const newOrigin=
+      getWebOrigin();
+
+
+    positions[0]=
+      newOrigin.x;
+
+    positions[1]=
+      newOrigin.y;
+
+    positions[2]=
+      newOrigin.z;
+
+
+    positions[3]=
+      webPoint.x;
+
+    positions[4]=
+      webPoint.y;
+
+    positions[5]=
+      webPoint.z;
+
+
+    webLine.geometry
+      .attributes
+      .position
+      .needsUpdate=true;
+  }
+}
+
+
+// ============================================================
+// MOVEMENT
+// ============================================================
+
+function updateMovement(dt){
+
+  const forward=
+    new THREE.Vector3(
+      -Math.sin(yaw),
+      0,
+      -Math.cos(yaw)
+    );
+
+  const right=
+    new THREE.Vector3(
+      Math.cos(yaw),
+      0,
+      -Math.sin(yaw)
+    );
+
+
+  const movement=
+    new THREE.Vector3();
+
+
+  if(keys.KeyW)
+    movement.add(forward);
+
+  if(keys.KeyS)
+    movement.sub(forward);
+
+  if(keys.KeyD)
+    movement.add(right);
+
+  if(keys.KeyA)
+    movement.sub(right);
+
+
+  if(movement.lengthSq()>0){
+
+    movement.normalize();
+
+
+    // Face movement direction
+
+    const targetAngle=
+      Math.atan2(
+        movement.x,
+        movement.z
+      );
+
+
+    let angleDifference=
+      targetAngle-
+      hero.rotation.y;
+
+
+    while(
+      angleDifference>Math.PI
+    )
+      angleDifference-=Math.PI*2;
+
+    while(
+      angleDifference<-Math.PI
+    )
+      angleDifference+=Math.PI*2;
+
+
+    hero.rotation.y +=
+      angleDifference*
+      Math.min(1,dt*10);
+
+
+    velocityTarget.copy(
+      movement
+    ).multiplyScalar(
+      grounded ? 10 : 4
+    );
+
+  }
+  else{
+
+    velocityTarget.set(
+      0,
+      0,
+      0
+    );
+  }
+
+
+  // Horizontal acceleration
+
+  const acceleration=
+    grounded
+      ? 16
+      : 4;
+
+
+  velocity.x +=
+    (velocityTarget.x-
+     velocity.x)*
+    Math.min(
+      1,
+      acceleration*dt
+    );
+
+
+  velocity.z +=
+    (velocityTarget.z-
+     velocity.z)*
+    Math.min(
+      1,
+      acceleration*dt
+    );
+}
+
+
+// ============================================================
+// ANIMATION
+// ============================================================
+
+let animationTime=0;
+
+function animateHero(dt){
+
+  const horizontalSpeed=
+    Math.sqrt(
+      velocity.x*velocity.x+
+      velocity.z*velocity.z
+    );
+
+
+  if(horizontalSpeed>.3){
+
+    animationTime+=
+      dt*
+      horizontalSpeed*
+      .9;
+
+    const swing=
+      Math.sin(
+        animationTime
+      )*.65;
+
+    leftLeg.rotation.x=
+      swing;
+
+    rightLeg.rotation.x=
+      -swing;
+
+    leftArm.rotation.x=
+      -swing*.8;
+
+    rightArm.rotation.x=
+      swing*.8;
+
+  }
+  else{
+
+    // Relaxed idle pose
+
+    leftLeg.rotation.x=
+      THREE.MathUtils.lerp(
+        leftLeg.rotation.x,
+        0,
+        dt*8
+      );
+
+    rightLeg.rotation.x=
+      THREE.MathUtils.lerp(
+        rightLeg.rotation.x,
+        0,
+        dt*8
+      );
+
+    leftArm.rotation.x=
+      THREE.MathUtils.lerp(
+        leftArm.rotation.x,
+        0,
+        dt*8
+      );
+
+    rightArm.rotation.x=
+      THREE.MathUtils.lerp(
+        rightArm.rotation.x,
+        0,
+        dt*8
+      );
+  }
+
+
+  // Web-swinging pose
+
+  if(webAttached){
+
+    leftArm.rotation.x=
+      -1.2;
+
+    rightArm.rotation.x=
+      -1.2;
+
+    leftArm.rotation.z=
+      -.25;
+
+    rightArm.rotation.z=
+      .25;
+  }
+  else{
+
+    leftArm.rotation.z=
+      THREE.MathUtils.lerp(
+        leftArm.rotation.z,
+        0,
+        dt*8
+      );
+
+    rightArm.rotation.z=
+      THREE.MathUtils.lerp(
+        rightArm.rotation.z,
+        0,
+        dt*8
+      );
+  }
+}
+
+
+// ============================================================
+// CAMERA
+// ============================================================
+
+function updateCamera(dt){
+
+  const target=
+    hero.position.clone();
+
+  target.y+=2.4;
+
+
+  const distance=8;
+
+  const cameraOffset=
+    new THREE.Vector3(
+      Math.sin(yaw)*
+        Math.cos(pitch)*
+        distance,
+
+      Math.sin(pitch)*
+        distance+
+        2,
+
+      Math.cos(yaw)*
+        Math.cos(pitch)*
+        distance
+    );
+
+
+  const desired=
+    target.clone()
+      .add(cameraOffset);
+
+
+  camera.position.lerp(
+    desired,
+    Math.min(
+      1,
+      dt*7
+    )
+  );
+
 
   camera.lookAt(
-    hero.position.x,
-    hero.position.y + 2,
-    hero.position.z
+    target
+  );
+}
+
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+
+function animate(){
+
+  requestAnimationFrame(
+    animate
   );
 
-  renderer.render(scene, camera);
+
+  const now=
+    performance.now();
+
+  let dt=
+    (now-lastTime)/1000;
+
+  lastTime=now;
+
+  dt=
+    Math.min(
+      dt,
+      .033
+    );
+
+
+  updateMovement(dt);
+
+
+  // Gravity
+
+  velocity.y -=
+    25*dt;
+
+
+  // Web physics
+
+  updateWebPhysics(dt);
+
+
+  // Position
+
+  hero.position.x +=
+    velocity.x*dt;
+
+  hero.position.y +=
+    velocity.y*dt;
+
+  hero.position.z +=
+    velocity.z*dt;
+
+
+  // Ground
+
+  if(hero.position.y<=0){
+
+    hero.position.y=0;
+
+    if(velocity.y<0)
+      velocity.y=0;
+
+    grounded=true;
+
+  }
+  else{
+
+    grounded=false;
+  }
+
+
+  // Keep player inside city
+
+  hero.position.x=
+    THREE.MathUtils.clamp(
+      hero.position.x,
+      -235,
+      235
+    );
+
+  hero.position.z=
+    THREE.MathUtils.clamp(
+      hero.position.z,
+      -235,
+      235
+    );
+
+
+  animateHero(dt);
+
+  updateCamera(dt);
+
+
+  renderer.render(
+    scene,
+    camera
+  );
 }
+
 
 animate();
 
-// Resize
-window.addEventListener('resize', () => {
 
-  camera.aspect =
-    window.innerWidth / window.innerHeight;
+// ============================================================
+// RESIZE
+// ============================================================
 
-  camera.updateProjectionMatrix();
+addEventListener(
+  'resize',
+  ()=>{
 
-  renderer.setSize(
-    window.innerWidth,
-    window.innerHeight
-  );
-});
+    camera.aspect=
+      innerWidth/
+      innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+      innerWidth,
+      innerHeight
+    );
+  }
+);
+
 </script>
 
 </body>
