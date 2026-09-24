@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Ben's Web Hero</title>
 
 <style>
@@ -11,7 +11,7 @@ html,body{
   width:100%;
   height:100%;
   overflow:hidden;
-  background:#050914;
+  background:#79b9e8;
   font-family:Arial,sans-serif;
 }
 
@@ -21,23 +21,28 @@ canvas{
 
 #hud{
   position:fixed;
+  z-index:10;
   top:15px;
   left:15px;
-  z-index:10;
-  color:white;
-  background:rgba(0,0,0,.65);
   padding:14px 18px;
+  color:white;
+  background:rgba(0,0,0,.7);
   border-radius:12px;
   line-height:1.5;
-  user-select:none;
+  pointer-events:none;
 }
 
 #hud b{
-  color:#ff3b3b;
+  color:#ff4040;
+}
+
+#status{
+  color:#70d8ff;
 }
 
 #crosshair{
   position:fixed;
+  z-index:10;
   left:50%;
   top:50%;
   transform:translate(-50%,-50%);
@@ -46,20 +51,17 @@ canvas{
   pointer-events:none;
 }
 
-#status{
-  color:#70d6ff;
-}
-
-#help{
+#message{
   position:fixed;
-  bottom:15px;
+  z-index:10;
+  bottom:20px;
   left:50%;
   transform:translateX(-50%);
   color:white;
-  background:rgba(0,0,0,.55);
-  padding:8px 15px;
+  background:rgba(0,0,0,.65);
+  padding:10px 18px;
   border-radius:10px;
-  font-size:14px;
+  pointer-events:none;
 }
 </style>
 </head>
@@ -71,54 +73,47 @@ canvas{
   WASD — Move<br>
   SPACE — Jump<br>
   Mouse — Look<br>
-  Click — Shoot / release web<br>
+  Left Click — Web<br>
   <span id="status">Web: Ready</span>
 </div>
 
 <div id="crosshair">+</div>
 
-<div id="help">
-  Click the game to control the camera
+<div id="message">
+  Click the screen to enable mouse look
 </div>
 
 <script type="module">
 
 import * as THREE from
-'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
 
 // ============================================================
-// SCENE
+// BASIC SETUP
 // ============================================================
 
 const scene = new THREE.Scene();
 
-scene.background = new THREE.Color(0x79b9e8);
+scene.background =
+  new THREE.Color(0x78b8e8);
 
-scene.fog = new THREE.Fog(
-  0x79b9e8,
-  80,
-  260
-);
-
-
-// ============================================================
-// CAMERA
-// ============================================================
-
-const camera = new THREE.PerspectiveCamera(
-  70,
-  innerWidth / innerHeight,
-  0.1,
-  600
-);
-
-camera.position.set(0,7,12);
+scene.fog =
+  new THREE.Fog(
+    0x78b8e8,
+    90,
+    260
+  );
 
 
-// ============================================================
-// RENDERER
-// ============================================================
+const camera =
+  new THREE.PerspectiveCamera(
+    70,
+    innerWidth / innerHeight,
+    .1,
+    600
+  );
+
 
 const renderer =
   new THREE.WebGLRenderer({
@@ -136,7 +131,7 @@ renderer.setPixelRatio(
 
 renderer.shadowMap.enabled=true;
 
-renderer.shadowMap.type=
+renderer.shadowMap.type =
   THREE.PCFSoftShadowMap;
 
 document.body.appendChild(
@@ -155,8 +150,8 @@ const sun =
   );
 
 sun.position.set(
-  80,
-  120,
+  70,
+  110,
   40
 );
 
@@ -173,52 +168,14 @@ sun.shadow.camera.bottom=-150;
 scene.add(sun);
 
 
-scene.add(
+const skyLight =
   new THREE.HemisphereLight(
-    0xaad8ff,
+    0xbfe6ff,
     0x222233,
     1.5
-  )
-);
+  );
 
-
-// ============================================================
-// MATERIALS
-// ============================================================
-
-const groundMaterial =
-  new THREE.MeshStandardMaterial({
-    color:0x34383d,
-    roughness:.9
-  });
-
-const roadMaterial =
-  new THREE.MeshStandardMaterial({
-    color:0x17191d,
-    roughness:1
-  });
-
-const buildingMaterials=[
-  new THREE.MeshStandardMaterial({
-    color:0x626b78,
-    roughness:.8
-  }),
-
-  new THREE.MeshStandardMaterial({
-    color:0x7a7470,
-    roughness:.8
-  }),
-
-  new THREE.MeshStandardMaterial({
-    color:0x4e5968,
-    roughness:.8
-  }),
-
-  new THREE.MeshStandardMaterial({
-    color:0x8b8580,
-    roughness:.8
-  })
-];
+scene.add(skyLight);
 
 
 // ============================================================
@@ -232,10 +189,14 @@ const ground =
       1,
       500
     ),
-    groundMaterial
+    new THREE.MeshStandardMaterial({
+      color:0x35393e,
+      roughness:.95
+    })
   );
 
 ground.position.y=-.5;
+
 ground.receiveShadow=true;
 
 scene.add(ground);
@@ -245,13 +206,20 @@ scene.add(ground);
 // ROADS
 // ============================================================
 
-for(let x=-100;x<=100;x+=40){
+const roadMaterial =
+  new THREE.MeshStandardMaterial({
+    color:0x17191c,
+    roughness:1
+  });
+
+
+for(let x=-120;x<=120;x+=40){
 
   const road =
     new THREE.Mesh(
       new THREE.BoxGeometry(
         12,
-        .05,
+        .06,
         500
       ),
       roadMaterial
@@ -267,13 +235,13 @@ for(let x=-100;x<=100;x+=40){
 }
 
 
-for(let z=-100;z<=100;z+=40){
+for(let z=-120;z<=120;z+=40){
 
   const road =
     new THREE.Mesh(
       new THREE.BoxGeometry(
         500,
-        .05,
+        .06,
         12
       ),
       roadMaterial
@@ -295,7 +263,30 @@ for(let z=-100;z<=100;z+=40){
 
 const buildings=[];
 
-function makeBuilding(
+const buildingMaterials=[
+  new THREE.MeshStandardMaterial({
+    color:0x596572,
+    roughness:.8
+  }),
+
+  new THREE.MeshStandardMaterial({
+    color:0x716d69,
+    roughness:.85
+  }),
+
+  new THREE.MeshStandardMaterial({
+    color:0x4d5865,
+    roughness:.8
+  }),
+
+  new THREE.MeshStandardMaterial({
+    color:0x807a75,
+    roughness:.85
+  })
+];
+
+
+function createBuilding(
   x,
   z,
   width,
@@ -306,10 +297,11 @@ function makeBuilding(
   const material =
     buildingMaterials[
       Math.floor(
-        Math.random()*
+        Math.random() *
         buildingMaterials.length
       )
     ];
+
 
   const building =
     new THREE.Mesh(
@@ -321,11 +313,13 @@ function makeBuilding(
       material
     );
 
+
   building.position.set(
     x,
     height/2,
     z
   );
+
 
   building.castShadow=true;
   building.receiveShadow=true;
@@ -339,19 +333,24 @@ function makeBuilding(
 
   const windowMaterial =
     new THREE.MeshStandardMaterial({
-      color:0xffe28a,
-      emissive:0x665000,
+      color:0xffdc7a,
+      emissive:0x4b3900,
       roughness:.3
     });
 
 
   const rows =
-    Math.floor(height/3.5);
+    Math.floor(
+      height/3.5
+    );
+
 
   const cols =
     Math.max(
       1,
-      Math.floor(width/2.5)
+      Math.floor(
+        width/2.5
+      )
     );
 
 
@@ -367,33 +366,32 @@ function makeBuilding(
       col++
     ){
 
-      if(Math.random()<.12)
+      if(Math.random()<.15)
         continue;
+
 
       const window =
         new THREE.Mesh(
           new THREE.BoxGeometry(
             1,
-            1.4,
+            1.35,
             .08
           ),
           windowMaterial
         );
 
-      const wx =
-        x-width/2+
-        1.5+
-        col*2.5;
-
-      const wy =
-        2+
-        row*3.5;
 
       window.position.set(
-        wx,
-        wy,
+        x-width/2+
+          1.4+
+          col*2.5,
+
+        2+
+          row*3.5,
+
         z-depth/2-.05
       );
+
 
       scene.add(window);
     }
@@ -401,9 +399,9 @@ function makeBuilding(
 }
 
 
-// City layout
+// City
 
-const cityPositions=[
+const city=[
   [-55,-55,22,55,22],
   [-15,-55,18,38,18],
   [25,-55,25,70,22],
@@ -425,8 +423,9 @@ const cityPositions=[
   [100,-50,22,65,22]
 ];
 
-for(const b of cityPositions){
-  makeBuilding(...b);
+
+for(const b of city){
+  createBuilding(...b);
 }
 
 
@@ -434,15 +433,17 @@ for(const b of cityPositions){
 // STREET LIGHTS
 // ============================================================
 
-function streetLight(x,z){
+function createStreetLight(x,z){
 
   const pole =
     new THREE.Mesh(
       new THREE.CylinderGeometry(
-        .12,.12,5
+        .12,
+        .12,
+        5
       ),
       new THREE.MeshStandardMaterial({
-        color:0x20242a
+        color:0x202328
       })
     );
 
@@ -480,15 +481,22 @@ function streetLight(x,z){
 }
 
 
-for(let x=-100;x<=100;x+=40){
+for(
+  let x=-100;
+  x<=100;
+  x+=40
+){
 
-  for(let z=-100;z<=100;z+=40){
+  for(
+    let z=-100;
+    z<=100;
+    z+=40
+  ){
 
-    streetLight(
-      x+8,
-      z+8
+    createStreetLight(
+      x+7,
+      z+7
     );
-
   }
 }
 
@@ -507,20 +515,20 @@ scene.add(hero);
 
 const red =
   new THREE.MeshStandardMaterial({
-    color:0xc91b24,
+    color:0xc91d26,
     roughness:.65
   });
 
 const blue =
   new THREE.MeshStandardMaterial({
-    color:0x101d79,
+    color:0x111d7c,
     roughness:.7
   });
 
-const black =
+const white =
   new THREE.MeshStandardMaterial({
-    color:0x050505,
-    roughness:.5
+    color:0xffffff,
+    roughness:.25
   });
 
 
@@ -564,12 +572,6 @@ hero.add(head);
 
 // Eyes
 
-const eyeMaterial =
-  new THREE.MeshStandardMaterial({
-    color:0xffffff,
-    roughness:.25
-  });
-
 for(const x of [-.19,.19]){
 
   const eye =
@@ -579,12 +581,12 @@ for(const x of [-.19,.19]){
         12,
         12
       ),
-      eyeMaterial
+      white
     );
 
   eye.scale.set(
     .7,
-    1.35,
+    1.4,
     .25
   );
 
@@ -621,7 +623,7 @@ hero.add(hips);
 // LIMBS
 // ============================================================
 
-function createLimb(
+function makeLimb(
   material,
   width,
   height,
@@ -630,6 +632,7 @@ function createLimb(
 
   const pivot =
     new THREE.Group();
+
 
   const mesh =
     new THREE.Mesh(
@@ -641,8 +644,10 @@ function createLimb(
       material
     );
 
+
   mesh.position.y=
     -height/2;
+
 
   mesh.castShadow=true;
 
@@ -654,29 +659,30 @@ function createLimb(
 }
 
 
-// Legs
-
 const leftLeg =
-  createLimb(
+  makeLimb(
     blue,
     .38,
     1.55,
     .45
   );
+
 
 const rightLeg =
-  createLimb(
+  makeLimb(
     blue,
     .38,
     1.55,
     .45
   );
+
 
 leftLeg.position.set(
   -.3,
   1.55,
   0
 );
+
 
 rightLeg.position.set(
   .3,
@@ -685,29 +691,30 @@ rightLeg.position.set(
 );
 
 
-// Arms
-
 const leftArm =
-  createLimb(
+  makeLimb(
     red,
     .34,
     1.45,
     .4
   );
+
 
 const rightArm =
-  createLimb(
+  makeLimb(
     red,
     .34,
     1.45,
     .4
   );
+
 
 leftArm.position.set(
   -.72,
   3.15,
   0
 );
+
 
 rightArm.position.set(
   .72,
@@ -725,11 +732,13 @@ const handGeometry =
     12
   );
 
+
 const leftHand =
   new THREE.Mesh(
     handGeometry,
     red
   );
+
 
 const rightHand =
   new THREE.Mesh(
@@ -737,37 +746,60 @@ const rightHand =
     red
   );
 
+
 leftHand.position.y=-1.5;
 rightHand.position.y=-1.5;
+
 
 leftArm.add(leftHand);
 rightArm.add(rightHand);
 
 
 // ============================================================
-// CONTROLS
+// PLAYER PHYSICS
+// ============================================================
+
+const velocity =
+  new THREE.Vector3();
+
+let grounded=true;
+
+const gravity=25;
+
+const jumpPower=9;
+
+const walkSpeed=10;
+
+
+// ============================================================
+// KEYBOARD
 // ============================================================
 
 const keys={};
 
 addEventListener(
-  'keydown',
+  "keydown",
   e=>{
+
     keys[e.code]=true;
 
+
     if(
-      e.code==='Space'
-      &&
+      e.code==="Space" &&
       grounded
     ){
-      velocity.y=9;
+
+      velocity.y=
+        jumpPower;
+
       grounded=false;
     }
   }
 );
 
+
 addEventListener(
-  'keyup',
+  "keyup",
   e=>{
     keys[e.code]=false;
   }
@@ -775,74 +807,90 @@ addEventListener(
 
 
 // ============================================================
-// MOUSE CAMERA
+// CAMERA / MOUSE
 // ============================================================
 
 let yaw=0;
+
 let pitch=.18;
 
-let mouseLocked=false;
+let mouseLooking=false;
+
 
 renderer.domElement.addEventListener(
-  'click',
+  "click",
   ()=>{
-    renderer.domElement.requestPointerLock();
+
+    if(
+      document.pointerLockElement !==
+      renderer.domElement
+    ){
+
+      renderer.domElement.requestPointerLock();
+
+    }
+
   }
 );
 
+
 document.addEventListener(
-  'pointerlockchange',
+  "pointerlockchange",
   ()=>{
-    mouseLocked=
-      document.pointerLockElement===
+
+    mouseLooking =
+      document.pointerLockElement ===
       renderer.domElement;
+
+
+    document.getElementById(
+      "message"
+    ).textContent =
+      mouseLooking
+      ? "Mouse look enabled"
+      : "Click the screen to enable mouse look";
   }
 );
 
+
 document.addEventListener(
-  'mousemove',
+  "mousemove",
   e=>{
 
-    if(!mouseLocked)
+    if(!mouseLooking)
       return;
 
-    yaw-=e.movementX*.0025;
 
-    pitch-=e.movementY*.0025;
+    yaw -=
+      e.movementX*.0025;
 
-    pitch=
-      Math.max(
+
+    pitch -=
+      e.movementY*.0025;
+
+
+    pitch =
+      THREE.MathUtils.clamp(
+        pitch,
         -.55,
-        Math.min(.65,pitch)
+        .65
       );
   }
 );
 
 
 // ============================================================
-// PHYSICS
-// ============================================================
-
-const velocity =
-  new THREE.Vector3();
-
-const velocityTarget =
-  new THREE.Vector3();
-
-let grounded=true;
-
-let lastTime=
-  performance.now();
-
-
-// ============================================================
-// WEB
+// WEB SYSTEM
 // ============================================================
 
 let webAttached=false;
+
 let webPoint=null;
-let webLine=null;
+
 let ropeLength=0;
+
+let webLine=null;
+
 
 const webMaterial =
   new THREE.LineBasicMaterial({
@@ -850,7 +898,7 @@ const webMaterial =
   });
 
 
-function getWebOrigin(){
+function webOrigin(){
 
   return hero.localToWorld(
     new THREE.Vector3(
@@ -864,6 +912,8 @@ function getWebOrigin(){
 
 function shootWeb(){
 
+  // Clicking while attached releases it
+
   if(webAttached){
 
     releaseWeb();
@@ -875,6 +925,9 @@ function shootWeb(){
   const raycaster =
     new THREE.Raycaster();
 
+
+  // Fire toward camera crosshair
+
   const direction =
     new THREE.Vector3(
       0,
@@ -882,13 +935,20 @@ function shootWeb(){
       -1
     );
 
+
   direction.applyQuaternion(
     camera.quaternion
   );
 
 
+  // Start near the hero
+
+  const origin =
+    webOrigin();
+
+
   raycaster.set(
-    camera.position,
+    origin,
     direction
   );
 
@@ -903,34 +963,37 @@ function shootWeb(){
   if(hits.length===0){
 
     document.getElementById(
-      'status'
+      "status"
     ).textContent=
-      'Web: No building hit';
+      "Web: Aim at a building";
 
     return;
   }
 
 
-  const hit=hits[0];
-
-  webPoint=
-    hit.point.clone();
+  webPoint =
+    hits[0].point.clone();
 
 
-  const origin=
-    getWebOrigin();
-
-
-  ropeLength=
+  ropeLength =
     origin.distanceTo(
       webPoint
+    );
+
+
+  // Don't allow absurdly short ropes
+
+  ropeLength =
+    Math.max(
+      ropeLength,
+      4
     );
 
 
   webAttached=true;
 
 
-  const geometry=
+  const geometry =
     new THREE.BufferGeometry()
       .setFromPoints([
         origin,
@@ -938,7 +1001,7 @@ function shootWeb(){
       ]);
 
 
-  webLine=
+  webLine =
     new THREE.Line(
       geometry,
       webMaterial
@@ -949,9 +1012,9 @@ function shootWeb(){
 
 
   document.getElementById(
-    'status'
+    "status"
   ).textContent=
-    'Web: ATTACHED';
+    "Web: ATTACHED";
 }
 
 
@@ -959,49 +1022,195 @@ function releaseWeb(){
 
   webAttached=false;
 
+
   if(webLine){
 
     scene.remove(
       webLine
     );
 
+    webLine.geometry.dispose();
+
     webLine=null;
   }
 
+
   document.getElementById(
-    'status'
+    "status"
   ).textContent=
-    'Web: Ready';
+    "Web: Ready";
 }
 
 
-addEventListener(
-  'mousedown',
+// ============================================================
+// CLICK HANDLING
+// ============================================================
+
+renderer.domElement.addEventListener(
+  "mousedown",
   e=>{
 
-    if(e.button===0){
-      shootWeb();
+    if(e.button!==0)
+      return;
+
+
+    e.preventDefault();
+
+
+    // If mouse isn't locked, the first click
+    // only enables mouse look.
+    if(!mouseLooking){
+
+      renderer.domElement.requestPointerLock();
+
+      return;
     }
 
+
+    shootWeb();
   }
 );
+
+
+// ============================================================
+// MOVEMENT
+// ============================================================
+
+function updateMovement(dt){
+
+  const forward =
+    new THREE.Vector3(
+      -Math.sin(yaw),
+      0,
+      -Math.cos(yaw)
+    );
+
+
+  const right =
+    new THREE.Vector3(
+      Math.cos(yaw),
+      0,
+      -Math.sin(yaw)
+    );
+
+
+  const direction =
+    new THREE.Vector3();
+
+
+  if(keys.KeyW)
+    direction.add(forward);
+
+  if(keys.KeyS)
+    direction.sub(forward);
+
+  if(keys.KeyD)
+    direction.add(right);
+
+  if(keys.KeyA)
+    direction.sub(right);
+
+
+  if(direction.lengthSq()>0){
+
+    direction.normalize();
+
+
+    const target =
+      direction.clone()
+        .multiplyScalar(
+          walkSpeed
+        );
+
+
+    const acceleration =
+      grounded
+      ? 18
+      : 5;
+
+
+    velocity.x +=
+      (target.x-velocity.x)*
+      Math.min(
+        1,
+        acceleration*dt
+      );
+
+
+    velocity.z +=
+      (target.z-velocity.z)*
+      Math.min(
+        1,
+        acceleration*dt
+      );
+
+
+    // Rotate hero
+
+    const desiredAngle =
+      Math.atan2(
+        direction.x,
+        direction.z
+      );
+
+
+    let difference =
+      desiredAngle -
+      hero.rotation.y;
+
+
+    while(
+      difference>Math.PI
+    )
+      difference-=Math.PI*2;
+
+
+    while(
+      difference<-Math.PI
+    )
+      difference+=Math.PI*2;
+
+
+    hero.rotation.y +=
+      difference*
+      Math.min(
+        1,
+        dt*10
+      );
+
+  }
+  else if(grounded){
+
+    velocity.x *=
+      Math.pow(
+        .0001,
+        dt
+      );
+
+    velocity.z *=
+      Math.pow(
+        .0001,
+        dt
+      );
+  }
+}
 
 
 // ============================================================
 // SWING PHYSICS
 // ============================================================
 
-function updateWebPhysics(dt){
+function updateSwing(dt){
 
   if(!webAttached)
     return;
 
 
-  const origin=
-    getWebOrigin();
+  const origin =
+    webOrigin();
 
 
-  const difference=
+  const rope =
     new THREE.Vector3()
       .subVectors(
         origin,
@@ -1009,92 +1218,81 @@ function updateWebPhysics(dt){
       );
 
 
-  const distance=
-    difference.length();
+  const distance =
+    rope.length();
 
-
-  // Rope constraint
 
   if(distance>ropeLength){
 
-    const normal=
-      difference.clone()
-        .normalize();
+    const normal =
+      rope.normalize();
 
 
-    // Move hero back onto rope sphere
-
-    const correction=
+    const excess =
       distance-ropeLength;
 
+
+    // Put player back on rope sphere
 
     hero.position.add(
       normal.clone()
         .multiplyScalar(
-          -correction
+          -excess
         )
     );
 
 
-    // Remove outward velocity
+    // Remove velocity going outward
 
-    const radialVelocity=
+    const radialSpeed =
       velocity.dot(normal);
 
 
-    if(radialVelocity>0){
+    if(radialSpeed>0){
 
       velocity.sub(
         normal.clone()
           .multiplyScalar(
-            radialVelocity
+            radialSpeed
           )
       );
-
     }
   }
 
 
-  // Air resistance
+  // Slight air resistance
 
   velocity.multiplyScalar(
-    Math.pow(.998,dt*60)
+    Math.pow(
+      .999,
+      dt*60
+    )
   );
 
 
-  // Update rope visual
+  // Update visible web
 
   if(webLine){
 
-    const positions=
+    const positions =
       webLine.geometry
         .attributes
         .position
         .array;
 
 
-    const newOrigin=
-      getWebOrigin();
+    const newOrigin =
+      webOrigin();
 
 
-    positions[0]=
-      newOrigin.x;
-
-    positions[1]=
-      newOrigin.y;
-
-    positions[2]=
-      newOrigin.z;
+    positions[0]=newOrigin.x;
+    positions[1]=newOrigin.y;
+    positions[2]=newOrigin.z;
 
 
-    positions[3]=
-      webPoint.x;
-
-    positions[4]=
-      webPoint.y;
-
-    positions[5]=
-      webPoint.z;
+    positions[3]=webPoint.x;
+    positions[4]=webPoint.y;
+    positions[5]=webPoint.z;
 
 
     webLine.geometry
@@ -1106,188 +1304,76 @@ function updateWebPhysics(dt){
 
 
 // ============================================================
-// MOVEMENT
-// ============================================================
-
-function updateMovement(dt){
-
-  const forward=
-    new THREE.Vector3(
-      -Math.sin(yaw),
-      0,
-      -Math.cos(yaw)
-    );
-
-  const right=
-    new THREE.Vector3(
-      Math.cos(yaw),
-      0,
-      -Math.sin(yaw)
-    );
-
-
-  const movement=
-    new THREE.Vector3();
-
-
-  if(keys.KeyW)
-    movement.add(forward);
-
-  if(keys.KeyS)
-    movement.sub(forward);
-
-  if(keys.KeyD)
-    movement.add(right);
-
-  if(keys.KeyA)
-    movement.sub(right);
-
-
-  if(movement.lengthSq()>0){
-
-    movement.normalize();
-
-
-    // Face movement direction
-
-    const targetAngle=
-      Math.atan2(
-        movement.x,
-        movement.z
-      );
-
-
-    let angleDifference=
-      targetAngle-
-      hero.rotation.y;
-
-
-    while(
-      angleDifference>Math.PI
-    )
-      angleDifference-=Math.PI*2;
-
-    while(
-      angleDifference<-Math.PI
-    )
-      angleDifference+=Math.PI*2;
-
-
-    hero.rotation.y +=
-      angleDifference*
-      Math.min(1,dt*10);
-
-
-    velocityTarget.copy(
-      movement
-    ).multiplyScalar(
-      grounded ? 10 : 4
-    );
-
-  }
-  else{
-
-    velocityTarget.set(
-      0,
-      0,
-      0
-    );
-  }
-
-
-  // Horizontal acceleration
-
-  const acceleration=
-    grounded
-      ? 16
-      : 4;
-
-
-  velocity.x +=
-    (velocityTarget.x-
-     velocity.x)*
-    Math.min(
-      1,
-      acceleration*dt
-    );
-
-
-  velocity.z +=
-    (velocityTarget.z-
-     velocity.z)*
-    Math.min(
-      1,
-      acceleration*dt
-    );
-}
-
-
-// ============================================================
-// ANIMATION
+// CHARACTER ANIMATION
 // ============================================================
 
 let animationTime=0;
 
+
 function animateHero(dt){
 
-  const horizontalSpeed=
+  const speed =
     Math.sqrt(
       velocity.x*velocity.x+
       velocity.z*velocity.z
     );
 
 
-  if(horizontalSpeed>.3){
+  if(speed>.5){
 
-    animationTime+=
-      dt*
-      horizontalSpeed*
-      .9;
+    animationTime +=
+      dt*speed*1.1;
 
-    const swing=
+
+    const swing =
       Math.sin(
         animationTime
       )*.65;
 
-    leftLeg.rotation.x=
+
+    leftLeg.rotation.x =
       swing;
 
-    rightLeg.rotation.x=
+
+    rightLeg.rotation.x =
       -swing;
 
-    leftArm.rotation.x=
+
+    leftArm.rotation.x =
       -swing*.8;
 
-    rightArm.rotation.x=
+
+    rightArm.rotation.x =
       swing*.8;
 
   }
   else{
 
-    // Relaxed idle pose
-
-    leftLeg.rotation.x=
+    leftLeg.rotation.x =
       THREE.MathUtils.lerp(
         leftLeg.rotation.x,
         0,
         dt*8
       );
 
-    rightLeg.rotation.x=
+
+    rightLeg.rotation.x =
       THREE.MathUtils.lerp(
         rightLeg.rotation.x,
         0,
         dt*8
       );
 
-    leftArm.rotation.x=
+
+    leftArm.rotation.x =
       THREE.MathUtils.lerp(
         leftArm.rotation.x,
         0,
         dt*8
       );
 
-    rightArm.rotation.x=
+
+    rightArm.rotation.x =
       THREE.MathUtils.lerp(
         rightArm.rotation.x,
         0,
@@ -1296,32 +1382,34 @@ function animateHero(dt){
   }
 
 
-  // Web-swinging pose
+  // Arms forward while web-swinging
 
   if(webAttached){
 
-    leftArm.rotation.x=
-      -1.2;
+    leftArm.rotation.x =
+      -1.25;
 
-    rightArm.rotation.x=
-      -1.2;
+    rightArm.rotation.x =
+      -1.25;
 
-    leftArm.rotation.z=
-      -.25;
+    leftArm.rotation.z =
+      -.2;
 
-    rightArm.rotation.z=
-      .25;
+    rightArm.rotation.z =
+      .2;
+
   }
   else{
 
-    leftArm.rotation.z=
+    leftArm.rotation.z =
       THREE.MathUtils.lerp(
         leftArm.rotation.z,
         0,
         dt*8
       );
 
-    rightArm.rotation.z=
+
+    rightArm.rotation.z =
       THREE.MathUtils.lerp(
         rightArm.rotation.z,
         0,
@@ -1337,33 +1425,34 @@ function animateHero(dt){
 
 function updateCamera(dt){
 
-  const target=
+  const target =
     hero.position.clone();
 
-  target.y+=2.4;
+
+  target.y += 2.3;
 
 
   const distance=8;
 
-  const cameraOffset=
+
+  const offset =
     new THREE.Vector3(
       Math.sin(yaw)*
-        Math.cos(pitch)*
-        distance,
+      Math.cos(pitch)*
+      distance,
 
       Math.sin(pitch)*
-        distance+
-        2,
+      distance+2,
 
       Math.cos(yaw)*
-        Math.cos(pitch)*
-        distance
+      Math.cos(pitch)*
+      distance
     );
 
 
-  const desired=
+  const desired =
     target.clone()
-      .add(cameraOffset);
+      .add(offset);
 
 
   camera.position.lerp(
@@ -1385,22 +1474,29 @@ function updateCamera(dt){
 // MAIN LOOP
 // ============================================================
 
-function animate(){
+let previous =
+  performance.now();
+
+
+function gameLoop(){
 
   requestAnimationFrame(
-    animate
+    gameLoop
   );
 
 
-  const now=
+  const now =
     performance.now();
 
-  let dt=
-    (now-lastTime)/1000;
 
-  lastTime=now;
+  let dt =
+    (now-previous)/1000;
 
-  dt=
+
+  previous=now;
+
+
+  dt =
     Math.min(
       dt,
       .033
@@ -1413,34 +1509,38 @@ function animate(){
   // Gravity
 
   velocity.y -=
-    25*dt;
+    gravity*dt;
 
 
-  // Web physics
+  // Web constraint
 
-  updateWebPhysics(dt);
+  updateSwing(dt);
 
 
-  // Position
+  // Move
 
   hero.position.x +=
     velocity.x*dt;
 
+
   hero.position.y +=
     velocity.y*dt;
+
 
   hero.position.z +=
     velocity.z*dt;
 
 
-  // Ground
+  // Ground collision
 
   if(hero.position.y<=0){
 
     hero.position.y=0;
 
+
     if(velocity.y<0)
       velocity.y=0;
+
 
     grounded=true;
 
@@ -1451,16 +1551,17 @@ function animate(){
   }
 
 
-  // Keep player inside city
+  // World boundary
 
-  hero.position.x=
+  hero.position.x =
     THREE.MathUtils.clamp(
       hero.position.x,
       -235,
       235
     );
 
-  hero.position.z=
+
+  hero.position.z =
     THREE.MathUtils.clamp(
       hero.position.z,
       -235,
@@ -1480,7 +1581,7 @@ function animate(){
 }
 
 
-animate();
+gameLoop();
 
 
 // ============================================================
@@ -1488,14 +1589,16 @@ animate();
 // ============================================================
 
 addEventListener(
-  'resize',
+  "resize",
   ()=>{
 
-    camera.aspect=
+    camera.aspect =
       innerWidth/
       innerHeight;
 
+
     camera.updateProjectionMatrix();
+
 
     renderer.setSize(
       innerWidth,
