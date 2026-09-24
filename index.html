@@ -1,93 +1,295 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Ben's Game Site</title>
+  <title>Ben's 3D Web Hero</title>
   <style>
     body {
       margin: 0;
+      overflow: hidden;
+      background: #111;
       font-family: Arial, sans-serif;
-      background: #202124;
+    }
+
+    #info {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      z-index: 10;
       color: white;
-      text-align: center;
+      background: rgba(0,0,0,.65);
+      padding: 12px 16px;
+      border-radius: 10px;
     }
 
-    header {
-      background: #4285f4;
-      padding: 25px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 40px;
-    }
-
-    .games {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      flex-wrap: wrap;
-      padding: 40px;
-    }
-
-    .game {
-      background: white;
-      color: #222;
-      width: 220px;
-      padding: 25px;
-      border-radius: 15px;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-
-    .game:hover {
-      transform: scale(1.05);
-    }
-
-    .game button {
-      background: #4285f4;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
+    #info b {
+      color: #ff3333;
     }
   </style>
 </head>
 
 <body>
 
-  <header>
-    <h1>🎮 Ben's Game Site</h1>
-    <p>Welcome! Choose a game below.</p>
-  </header>
+<div id="info">
+  🕷️ <b>Ben's Web Hero</b><br>
+  WASD = Move &nbsp; | &nbsp; Space = Jump
+</div>
 
-  <div class="games">
+<script type="module">
+import * as THREE from
+'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-    <div class="game">
-      <h2>🐍 Snake</h2>
-      <p>Coming soon!</p>
-      <button onclick="alert('Snake is coming soon!')">
-        Play
-      </button>
-    </div>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
 
-    <div class="game">
-      <h2>🎯 Clicker</h2>
-      <p>Click the button!</p>
-      <button onclick="alert('You clicked it!')">
-        Play
-      </button>
-    </div>
+// Camera
+const camera = new THREE.PerspectiveCamera(
+  70,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
 
-    <div class="game">
-      <h2>🚀 Space Game</h2>
-      <p>Coming soon!</p>
-      <button onclick="alert('Space Game is coming soon!')">
-        Play
-      </button>
-    </div>
+camera.position.set(0, 7, 10);
 
-  </div>
+// Renderer
+const renderer = new THREE.WebGLRenderer({
+  antialias: true
+});
+
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+
+// Lights
+const sunlight = new THREE.DirectionalLight(0xffffff, 2);
+sunlight.position.set(20, 40, 20);
+sunlight.castShadow = true;
+scene.add(sunlight);
+
+scene.add(new THREE.HemisphereLight(
+  0xffffff,
+  0x444444,
+  1.5
+));
+
+// Ground
+const ground = new THREE.Mesh(
+  new THREE.BoxGeometry(120, 1, 120),
+  new THREE.MeshStandardMaterial({ color: 0x333333 })
+);
+
+ground.position.y = -0.5;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Roads
+for (let x = -50; x <= 50; x += 20) {
+  const road = new THREE.Mesh(
+    new THREE.BoxGeometry(8, 0.05, 120),
+    new THREE.MeshStandardMaterial({ color: 0x111111 })
+  );
+
+  road.position.set(x, 0.03, 0);
+  scene.add(road);
+}
+
+// Buildings
+function createBuilding(x, z, width, height, depth) {
+
+  const building = new THREE.Mesh(
+    new THREE.BoxGeometry(width, height, depth),
+    new THREE.MeshStandardMaterial({
+      color: Math.random() > 0.5
+        ? 0x777777
+        : 0x555f70
+    })
+  );
+
+  building.position.set(
+    x,
+    height / 2,
+    z
+  );
+
+  building.castShadow = true;
+  building.receiveShadow = true;
+
+  scene.add(building);
+
+  // Windows
+  const windowMaterial =
+    new THREE.MeshBasicMaterial({
+      color: 0xffff88
+    });
+
+  for (let y = 4; y < height - 1; y += 4) {
+
+    for (let wx = -width / 2 + 1; wx < width / 2; wx += 2) {
+
+      const window = new THREE.Mesh(
+        new THREE.BoxGeometry(0.8, 1.2, 0.05),
+        windowMaterial
+      );
+
+      window.position.set(
+        x + wx,
+        y,
+        z - depth / 2 - 0.03
+      );
+
+      scene.add(window);
+    }
+  }
+}
+
+// City
+createBuilding(-18, -18, 12, 25, 12);
+createBuilding(18, -20, 15, 35, 14);
+createBuilding(-20, 18, 14, 42, 14);
+createBuilding(20, 20, 12, 28, 12);
+
+createBuilding(-40, 0, 14, 30, 14);
+createBuilding(40, 0, 14, 38, 14);
+
+createBuilding(0, -40, 18, 50, 18);
+createBuilding(0, 40, 18, 45, 18);
+
+// HERO
+const hero = new THREE.Group();
+
+// Body
+const body = new THREE.Mesh(
+  new THREE.BoxGeometry(1.2, 2, 0.65),
+  new THREE.MeshStandardMaterial({
+    color: 0xcc1111
+  })
+);
+
+body.position.y = 2;
+body.castShadow = true;
+hero.add(body);
+
+// Head
+const head = new THREE.Mesh(
+  new THREE.SphereGeometry(0.55, 24, 24),
+  new THREE.MeshStandardMaterial({
+    color: 0xcc1111
+  })
+);
+
+head.position.y = 3.4;
+head.castShadow = true;
+hero.add(head);
+
+// Blue legs
+const blue = new THREE.MeshStandardMaterial({
+  color: 0x1122aa
+});
+
+for (const x of [-0.35, 0.35]) {
+
+  const leg = new THREE.Mesh(
+    new THREE.BoxGeometry(0.4, 1.5, 0.5),
+    blue
+  );
+
+  leg.position.set(x, 0.75, 0);
+  leg.castShadow = true;
+  hero.add(leg);
+}
+
+// Blue arms
+for (const x of [-0.9, 0.9]) {
+
+  const arm = new THREE.Mesh(
+    new THREE.BoxGeometry(0.35, 1.5, 0.4),
+    blue
+  );
+
+  arm.position.set(x, 2, 0);
+  arm.rotation.z = x < 0 ? -0.15 : 0.15;
+  arm.castShadow = true;
+  hero.add(arm);
+}
+
+hero.position.set(0, 0, 0);
+scene.add(hero);
+
+// Controls
+const keys = {};
+
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+});
+
+window.addEventListener('keyup', e => {
+  keys[e.code] = false;
+});
+
+// Physics
+let velocityY = 0;
+let onGround = true;
+
+function animate() {
+
+  requestAnimationFrame(animate);
+
+  const speed = 0.18;
+
+  if (keys['KeyW']) hero.position.z -= speed;
+  if (keys['KeyS']) hero.position.z += speed;
+  if (keys['KeyA']) hero.position.x -= speed;
+  if (keys['KeyD']) hero.position.x += speed;
+
+  // Jump
+  if (keys['Space'] && onGround) {
+    velocityY = 0.32;
+    onGround = false;
+  }
+
+  velocityY -= 0.012;
+  hero.position.y += velocityY;
+
+  if (hero.position.y <= 0) {
+    hero.position.y = 0;
+    velocityY = 0;
+    onGround = true;
+  }
+
+  // Camera follows hero
+  const targetCamera = new THREE.Vector3(
+    hero.position.x,
+    hero.position.y + 6,
+    hero.position.z + 9
+  );
+
+  camera.position.lerp(targetCamera, 0.08);
+
+  camera.lookAt(
+    hero.position.x,
+    hero.position.y + 2,
+    hero.position.z
+  );
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+// Resize
+window.addEventListener('resize', () => {
+
+  camera.aspect =
+    window.innerWidth / window.innerHeight;
+
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+  );
+});
+</script>
 
 </body>
 </html>
