@@ -214,6 +214,56 @@ for (const x of [-0.9, 0.9]) {
 
 hero.position.set(0, 0, 0);
 scene.add(hero);
+// 🕸️ WEB SYSTEM
+
+let webLine = null;
+let webTarget = null;
+
+const webMaterial = new THREE.LineBasicMaterial({
+  color: 0xffffff,
+  linewidth: 3
+});
+
+function shootWeb() {
+
+  // If already attached, release the web
+  if (webLine) {
+    scene.remove(webLine);
+    webLine = null;
+    webTarget = null;
+    return;
+  }
+
+  // Shoot toward the direction the hero is facing
+  const direction = new THREE.Vector3(0, 0, -1);
+
+  direction.applyQuaternion(hero.quaternion);
+  direction.normalize();
+
+  // Web reaches 35 units
+  webTarget = hero.position.clone()
+    .add(direction.multiplyScalar(35));
+
+  // Create the web
+  const points = [
+    hero.position.clone().add(new THREE.Vector3(0, 2, 0)),
+    webTarget.clone()
+  ];
+
+  const geometry = new THREE.BufferGeometry()
+    .setFromPoints(points);
+
+  webLine = new THREE.Line(
+    geometry,
+    webMaterial
+  );
+
+  scene.add(webLine);
+}
+
+window.addEventListener('mousedown', () => {
+  shootWeb();
+});
 
 // Controls
 const keys = {};
